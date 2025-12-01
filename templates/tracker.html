@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <a href="{{ url_for('tracker') }}" class="btn btn-secondary btn-sm">⬅ Back</a>
+
+            <div>
+                <a class="btn btn-danger w-100"
+               href="{{ url_for('delete_all') }}"
+               onclick="return confirm('⚠ WARNING!\nThis will DELETE ALL tracking links AND all visitor logs.\nAre you 100% sure?');">
+                🗑 Delete ALL Tracking Data
+            </a>
+
+            </div>
+        </div>
+
+        <!-- Create Link Card -->
+        <div class="card p-4 mb-4">
+            <h3 class="mb-3">Create Tracking Link</h3>
+            <p class="text-muted" style="font-size: 0.9rem;">
+                Enter any URL. We will generate a tracking link that records visitors' IP, browser, and approximate location.
+            </p>
+
+            {% if error %}
+                <div class="alert alert-danger">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+            <form method="POST">
+                <label class="form-label">Destination URL</label>
+                <input type="text" name="target_url" class="form-control"
+                       placeholder="https://example.com" required>
+
+                <button class="btn btn-primary mt-3 w-100">
+                    Generate Tracking Link
+                </button>
+            </form>
+        </div>
+
+        {% if new_link %}
+        <div class="card p-4 mb-4 border-success">
+            <h5 class="mb-2 text-success">Tracking Link Created ✅</h5>
+
+            <p class="mb-1"><strong>Destination URL:</strong><br>
+                {{ new_link.target_url }}
+            </p>
+
+            <p class="mb-1">
+                <strong>Your Tracking Link:</strong>
+            </p>
+
+            <div class="input-group mb-2">
+                <input id="trackingLink" type="text" class="form-control"
+                       value="{{ tracking_url }}" readonly>
+                <button class="btn btn-outline-primary" onclick="copyLink()">
+                    Copy
+                </button>
+            </div>
+
+            <!-- WhatsApp Share Button -->
+            <a class="btn btn-success w-100 mt-2"
+               href="https://wa.me/?text={{ tracking_url }}"
+               target="_blank">
+                Share via WhatsApp
+            </a>
+
+            <hr>
+
+            <p class="mb-0">
+                <strong>View Stats:</strong><br>
+                <a href="{{ url_for('stats', slug=new_link.slug) }}">
+                    {{ url_for('stats', slug=new_link.slug, _external=True) }}
+                </a>
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- Existing Links Section -->
+        <div class="card p-4">
+            <h4 class="mb-3">Your Existing Tracking Links</h4>
+
+            {% if links %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Slug</th>
+                                <th>Destination</th>
+                                <th>Created At</th>
+                                <th>Stats</th>
+                                <th>Copy</th>
+                                <th>Send</th>
+                                <th>Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for link in links %}
+                            <tr>
+                                <td><code>{{ link.slug }}</code></td>
+                                <td style="max-width: 230px; word-wrap: break-word;">
+                                    <a href="{{ link.target_url }}" target="_blank">{{ link.target_url }}</a>
+                                </td>
+                                <td style="font-size: 0.85rem;">
+                                    {{ link.created_at }}
+                                </td>
+
+                                <!-- Stats -->
+                                <td>
+                                    <a class="btn btn-sm btn-outline-primary"
+                                       href="{{ url_for('stats', slug=link.slug) }}">
+                                        View
+                                    </a>
+                                </td>
+
+                                <!-- Copy -->
+                                <td>
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                            onclick="copyExisting('{{ url_for('track_redirect', slug=link.slug, _external=True) }}')">
+                                        Copy
+                                    </button>
+                                </td>
+
+                                <!-- Send -->
+                                <td>
+                                    <a class="btn btn-sm btn-success"
+                                       href="https://wa.me/?text={{ url_for('track_redirect', slug=link.slug, _external=True) }}"
+                                       target="_blank">
+                                        Send
+                                    </a>
+                                </td>
+
+                                <!-- Delete Button -->
+                                <td>
+                                    <a class="btn btn-sm btn-danger"
+                                       onclick="return confirm('Delete this tracking link and ALL its logs?')"
+                                       href="{{ url_for('delete_link', slug=link.slug) }}">
+                                        Delete
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No links created yet.</p>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<!-- JS -->
+<script>
+    function copyLink() {
+        const link = document.getElementById("trackingLink");
+        link.select();
+        link.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(link.value);
+        alert("Tracking Link Copied!");
+    }
+
+    function copyExisting(link) {
+        navigator.clipboard.writeText(link);
+        alert("Copied: " + link);
+    }
+</script>
+
+{% endblock %}

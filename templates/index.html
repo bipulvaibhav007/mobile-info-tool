@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mobile Number Info Tool</title>
+
+    <!-- Bootstrap CSS -->
+    <link 
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" 
+        rel="stylesheet">
+
+    <style>
+        body {
+            background: #f5f7fa;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+        }
+        .header-title {
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        .footer-text {
+            text-align: center;
+            margin-top: 30px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+
+            <div class="text-center mb-4">
+                <h1 class="header-title">📱 Mobile Number Info Tool</h1>
+                <p class="text-muted">Enter any mobile number to extract accurate telecom & location information</p>
+            </div>
+
+            <!-- Search Box -->
+            <div class="card p-4">
+                <form method="POST">
+
+                    <label class="form-label">Mobile Number</label>
+                    <input type="text" name="mobile" 
+                           class="form-control form-control-lg" 
+                           placeholder="e.g. +919876543210" required>
+
+                    <button class="btn btn-primary w-100 mt-3 btn-lg">
+                        Get Information
+                    </button>
+                </form>
+            </div>
+
+            <!-- Show Errors -->
+            {% if error %}
+                <div class="alert alert-danger mt-3">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+            <!-- Show Info -->
+            {% if info %}
+                <div class="card p-4 mt-4">
+                    <h4 class="mb-3">📊 Number Details</h4>
+
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <strong>Number:</strong> {{ info.number }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Country:</strong> {{ info.country }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>State / Region:</strong> {{ info.state }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Carrier:</strong> {{ info.carrier }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Line Type:</strong> {{ info.line_type }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Timezone:</strong> {{ info.timezone }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Valid Number:</strong> {{ info.valid }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Possible Number:</strong> {{ info.possible }}
+                        </li>
+                    </ul>
+
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<p class="footer-text">Made with ❤ in Flask</p>
+
+<!-- Bootstrap JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
