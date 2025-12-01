@@ -80,6 +80,10 @@ def get_geo(ip_address):
     try:
         resp = requests.get(f"{IP_API_URL}{ip_address}", timeout=5)
         data = resp.json()
+
+        if not data.get("success", True):
+            return None, None, None
+
         return (
             data.get("country"),
             data.get("region"),
@@ -87,6 +91,7 @@ def get_geo(ip_address):
         )
     except:
         return None, None, None
+
 
 
 # ----------------- ROUTES -----------------
@@ -182,8 +187,12 @@ def track_redirect(slug):
         conn.close()
         abort(404)
 
-    # Visitor info
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    # Extract raw IPs
+    raw_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+
+    # Get FIRST valid IP
+    ip = raw_ip.split(",")[0].strip()
+
     ua = request.headers.get("User-Agent", "")
     ref = request.referrer
 
@@ -202,7 +211,6 @@ def track_redirect(slug):
     conn.close()
 
     return redirect(link["target_url"])
-
 
 # ---------- Stats Page ----------
 @app.route("/stats/<slug>")
