@@ -29,7 +29,6 @@ def get_api_location(number):
 
 # ----------------- VISITOR TRACKER CONFIG -----------------
 DB_PATH = os.path.join(os.path.dirname(__file__), "visitors.db")
-IP_API_URL = "http://ipwho.is/"
 
 
 def get_db():
@@ -76,26 +75,26 @@ def generate_slug(length=6):
     return secrets.token_urlsafe(length)[:length]
 
 
+# --------------- FIXED GEO LOCATION API (ip-api.com) -----------------
 def get_geo(ip_address):
     try:
-        resp = requests.get(f"{IP_API_URL}{ip_address}", timeout=5)
-        data = resp.json()
+        url = f"http://ip-api.com/json/{ip_address}?fields=status,country,regionName,city"
+        resp = requests.get(url, timeout=5).json()
 
-        if not data.get("success", True):
+        if resp.get("status") != "success":
             return None, None, None
 
         return (
-            data.get("country"),
-            data.get("region"),
-            data.get("city")
+            resp.get("country"),
+            resp.get("regionName"),
+            resp.get("city")
         )
+
     except:
         return None, None, None
 
 
-
 # ----------------- ROUTES -----------------
-# ---------- Mobile Number Home ----------
 @app.route("/", methods=['GET', 'POST'])
 def home():
     info = None
@@ -107,14 +106,13 @@ def home():
         try:
             parsed = phonenumbers.parse(number)
 
-            # Basic data
             country_name = geocoder.country_name_for_number(parsed, "en")
             carrier_name = carrier.name_for_number(parsed, "en")
             timezone_data = timezone.time_zones_for_number(parsed)
+
             is_valid = phonenumbers.is_valid_number(parsed)
             is_possible = phonenumbers.is_possible_number(parsed)
 
-            # Get state
             api_data = get_api_location(number)
 
             state = None
@@ -134,7 +132,7 @@ def home():
                 "possible": is_possible
             }
 
-        except Exception as e:
+        except:
             error = "Invalid number. Use +91xxxxxxxxxx"
 
     return render_template("index.html", info=info, error=error)
@@ -187,15 +185,24 @@ def track_redirect(slug):
         conn.close()
         abort(404)
 
-    # Extract raw IPs
+    # Extract ALL IPs
     raw_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    ips = [i.strip() for i in raw_ip.split(",")]
 
-    # Get FIRST valid IP
-    ip = raw_ip.split(",")[0].strip()
+    # Pick first public IP
+    ip = None
+    for i in ips:
+        if not (i.startswith("10.") or i.startswith("172.") or i.startswith("192.168") or i == "127.0.0.1"):
+            ip = i
+            break
+
+    if not ip:
+        ip = request.remote_addr
 
     ua = request.headers.get("User-Agent", "")
     ref = request.referrer
 
+    # Geo Lookup
     country, region, city = get_geo(ip)
 
     cur.execute("""
@@ -212,6 +219,7 @@ def track_redirect(slug):
 
     return redirect(link["target_url"])
 
+
 # ---------- Stats Page ----------
 @app.route("/stats/<slug>")
 def stats(slug):
@@ -225,23 +233,20 @@ def stats(slug):
 
     return render_template("stats.html", link=link, visits=visits)
 
+
 # ---------------- DELETE A LINK ----------------
 @app.route("/delete/<slug>")
 def delete_link(slug):
     conn = get_db()
     cur = conn.cursor()
 
-    # get the link
     link = cur.execute("SELECT * FROM links WHERE slug=?", (slug,)).fetchone()
 
     if not link:
         conn.close()
         return "Link not found", 404
 
-    # delete all visits for the link
     cur.execute("DELETE FROM visits WHERE link_id=?", (link["id"],))
-
-    # delete the link
     cur.execute("DELETE FROM links WHERE id=?", (link["id"],))
     conn.commit()
     conn.close()
@@ -280,6 +285,7 @@ def delete_all():
     conn.close()
 
     return redirect(url_for("tracker"))
+
 
 # Start App
 if __name__ == "__main__":
